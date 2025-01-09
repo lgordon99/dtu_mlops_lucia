@@ -3,6 +3,7 @@
 A simple implementation of Gaussian MLP Encoder and Decoder trained on MNIST
 """
 
+import pdb
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
@@ -52,9 +53,10 @@ class Encoder(nn.Module):
         z = self.reparameterization(mean, log_var)
         return z, mean, log_var
 
-    def reparameterization(self, mean, var):
+    def reparameterization(self, mean, log_var):
         """Reparameterization trick to sample z values."""
-        epsilon = torch.randn(*var.shape)
+        var = log_var.exp()
+        epsilon = torch.randn(*var.shape).to(DEVICE)
         return mean + var * epsilon
 
 
@@ -64,7 +66,7 @@ class Decoder(nn.Module):
     def __init__(self, latent_dim, hidden_dim, output_dim) -> None:
         super().__init__()
         self.FC_hidden = nn.Linear(latent_dim, hidden_dim)
-        self.FC_output = nn.Linear(latent_dim, output_dim)
+        self.FC_output = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
         """Forward pass of the decoder module."""
@@ -114,7 +116,7 @@ for epoch in range(epochs):
             print(batch_idx)
         x = x.view(batch_size, x_dim)
         x = x.to(DEVICE)
-
+        optimizer.zero_grad()
         x_hat, mean, log_var = model(x)
         loss = loss_function(x, x_hat, mean, log_var)
 
